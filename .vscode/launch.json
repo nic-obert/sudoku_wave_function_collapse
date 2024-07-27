@@ -1,0 +1,45 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'sudoku_wave_function_collapse'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=sudoku_wave_function_collapse",
+                    "--package=sudoku_wave_function_collapse"
+                ],
+                "filter": {
+                    "name": "sudoku_wave_function_collapse",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'sudoku_wave_function_collapse'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=sudoku_wave_function_collapse",
+                    "--package=sudoku_wave_function_collapse"
+                ],
+                "filter": {
+                    "name": "sudoku_wave_function_collapse",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}
