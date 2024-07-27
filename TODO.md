@@ -6,6 +6,8 @@ Project Description
 
 ### Todo
 
+- [ ] write a good readme  
+- [ ] implement solver  
 - [ ] Eventually, implement a more efficient sudoku generation algorithm that doesn't involve brute-force generation. Now the average successful generation rate is around 26%  
 
 ### In Progress
@@ -13,4 +15,5 @@ Project Description
 
 ### Done ✓
 
+- [x] divide the code into multiple files  
 
