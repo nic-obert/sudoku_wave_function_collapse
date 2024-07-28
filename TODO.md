@@ -8,15 +8,15 @@ Project Description
 
 - [ ] use the bruteforce backtracking algorithm to count the number of solutions to generate a board with a unique solution  
 - [ ] Implement solver that analyzes wave functions and intersects them  
-- [ ] write a good readme  
 - [ ] Eventually, implement a more efficient sudoku generation algorithm that doesn't involve brute-force generation. Now the average successful generation rate is around 26%  
 
 ### In Progress
 
-- [ ] Add the possiblity to save and load boards from/to a file  
+- [ ] write a good readme  
 
 ### Done ✓
 
+- [x] Add the possiblity to save and load boards from/to a file  
 - [x] implement brute force solver (still uses wave functions)  
 - [x] divide the code into multiple files  
 
