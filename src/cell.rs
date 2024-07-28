@@ -1,15 +1,20 @@
 use core::fmt;
 use colored::Colorize;
-use rand::Rng;
+use rand::{rngs::ThreadRng, Rng};
+use serde::{Deserialize, Serialize};
 
 use crate::config::{CERTAIN_DIGIT_ROW_IN_BOX, DIGITS_IN_ROW_PER_CELL, DIGIT_BASE};
 
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum Cell {
 
+    /// Represents a cell with a certain digit
     Certain { digit: Digit },
-    Uncertain { wave: WaveFunction }
+    /// Represents a cell that could be any of the digits indicated by the wave function
+    Uncertain { wave: WaveFunction },
+
+    Blank
 
 }
 
@@ -44,6 +49,10 @@ impl Cell {
                     if wave.possibilities[1 + row_in_cell_index*DIGITS_IN_ROW_PER_CELL] { (2 + row_in_cell_index*DIGITS_IN_ROW_PER_CELL + ASCII_DIGITS_BASE) as u8 as char } else { ' ' },
                     if wave.possibilities[2 + row_in_cell_index*DIGITS_IN_ROW_PER_CELL] { (3 + row_in_cell_index*DIGITS_IN_ROW_PER_CELL + ASCII_DIGITS_BASE) as u8 as char } else { ' ' },
                 )
+            },
+
+            Cell::Blank => {
+                write!(f, "       ")
             }
         }
     }
@@ -54,10 +63,13 @@ impl Cell {
 /// Number in the range 1..=NUMBER_BASE
 pub type Digit = u8;
 
+pub type Entropy = u8;
 
-#[derive(Clone, Copy)]
+
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct WaveFunction {
 
+    // TODO: make this smaller by using bit fields to avoid copying hundreds of bytes when duplication the board
     possibilities: [bool; DIGIT_BASE]
 
 }
@@ -76,6 +88,7 @@ impl WaveFunction {
     }
 
     
+    #[allow(dead_code)]
     pub fn new_possibilities(possibilities: &[Digit]) -> Self {
         
         let mut wave = [false; DIGIT_BASE];
@@ -91,7 +104,12 @@ impl WaveFunction {
     }
 
 
-    pub fn collapse_random(self) -> Option<Digit> {
+    /// Randomly choose one of the possible states of the wave function.
+    /// This function takes an rng as a parameter to avoid requesting one at every call. 
+    /// This is useful since this function is usually called in a loop and it would be inefficient
+    /// to request an rng at every iteration.
+    /// Moreover, the rng is just really a pointer, so moving it around has low cost.
+    pub fn collapse_random(self, mut rng: ThreadRng) -> Option<Digit> {
         
         let mut possibilities: [Digit; DIGIT_BASE] = [0; DIGIT_BASE];
         let mut possibility_i = 0;
@@ -107,8 +125,6 @@ impl WaveFunction {
             return None;
         }
 
-        let mut rng = rand::thread_rng();
-
         Some(
             possibilities[
                 rng.gen_range(0..possibility_i)
@@ -117,12 +133,21 @@ impl WaveFunction {
     }
 
 
-    pub fn entropy(&self) -> u8 {
+    /// Return the first possible state in the wave function
+    pub fn collapse_first(self) -> Option<Digit> {
+        self.possibilities.iter()
+            .enumerate()
+            .find(|(_i, &p)| p)
+            .map(|(i, _p)| i as Digit + 1)
+    }
+
+
+    pub fn entropy(&self) -> Entropy {
 
         let mut entropy = 0;
 
         for digit in self.possibilities {
-            entropy += digit as u8;
+            entropy += digit as Entropy;
         }
 
         entropy

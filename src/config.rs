@@ -14,3 +14,5 @@ pub const COLUMN_COUNT: usize = ROW_COUNT;
 
 pub const CELL_COUNT: usize = DIGIT_BASE * DIGIT_BASE;
 
+pub const DEFAULT_HINT_COUNT: u8 = 30;
+
