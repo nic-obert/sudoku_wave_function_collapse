@@ -70,6 +70,7 @@ pub type Entropy = u8;
 pub struct WaveFunction {
 
     // TODO: make this smaller by using bit fields to avoid copying hundreds of bytes when duplication the board
+    // Test the performance difference to see if it's worth it. Bit fields may be slower to iterate through
     possibilities: [bool; DIGIT_BASE]
 
 }

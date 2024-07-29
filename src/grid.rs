@@ -1,29 +1,227 @@
 use core::fmt;
 use std::collections::HashSet;
+use std::mem::MaybeUninit;
+use std::mem;
+use std::pin::Pin;
 use std::u8;
 
 use rand::{thread_rng, Rng};
 use colored::Colorize;
-use serde::{Deserialize, Serialize};
+use serde::de::{self, Visitor};
+use serde::ser::SerializeTuple;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::location::Location;
+use crate::location::{Location, Vec2};
 use crate::config::{BOXES_PER_ROW, CELL_COUNT, DIGITS_IN_COLUMN_PER_BOX, DIGITS_IN_ROW_PER_BOX, DIGIT_BASE, ROW_COUNT};
 use crate::cell::{Cell, Digit, Entropy, WaveFunction};
+
+
+const SIZE_OF_SECTOR: usize = 21;
+
+
+pub struct SectorIterator {
+
+    visited: HashSet<Location>,
+    iter_mode: SectorIterMode,
+    center: Location
+
+}
+
+enum SectorIterMode {
+
+    Row { current: Location },
+
+    Column { current: Location },
+
+    Box { top_left: Location, row: u8, column: u8 },
+
+    Done
+
+}
+
+impl SectorIterator {
+
+
+    pub fn new(center: Location) -> Self {
+        Self {
+            visited: HashSet::with_capacity(SIZE_OF_SECTOR),
+            iter_mode: SectorIterMode::Row { 
+                current: Location { 
+                    row: center.row, 
+                    column: 0 
+                } },
+            center
+        }
+    }
+
+}
+
+impl Iterator for SectorIterator {
+    type Item = Location;
+
+    fn next(&mut self) -> Option<Self::Item> {
+
+        /*
+            Iteration goes like this:
+            1. iterate through the row
+            2. iterate through the column
+            3. iterate through the box
+        */
+        
+        match self.iter_mode {
+
+            SectorIterMode::Row { current } => {
+                
+                self.iter_mode = if let Some(next) = current.right() {
+                    SectorIterMode::Row { current: next }
+                } else {
+                    SectorIterMode::Column { current: Location {
+                        row: 0,
+                        column: self.center.column
+                    } }
+                };
+                
+                if self.visited.insert(current) {
+                    Some(current)
+                } else {
+                    self.next()
+                }
+            },
+
+            SectorIterMode::Column { current } => {
+
+                self.iter_mode = if let Some(next) = current.below() {
+                    SectorIterMode::Column { current: next }
+                } else {
+                    SectorIterMode::Box { 
+                        top_left: Location {
+                            row: self.center.row / DIGITS_IN_COLUMN_PER_BOX as u8 * DIGITS_IN_COLUMN_PER_BOX as u8,
+                            column: self.center.column / DIGITS_IN_ROW_PER_BOX as u8 * DIGITS_IN_ROW_PER_BOX as u8
+                        }, 
+                        row: 0, 
+                        column: 0 
+                    }
+                };
+
+                if self.visited.insert(current) {
+                    Some(current)
+                } else {
+                    self.next()
+                }
+            },
+
+            SectorIterMode::Box { top_left, row, column } => {
+
+                let current = unsafe {
+                    top_left.add_unchecked(Vec2 { rows: row as i8, columns: column as i8 })
+                };
+
+                self.iter_mode = {
+
+                    if column == DIGITS_IN_ROW_PER_BOX as u8 - 1 {
+
+                        if row == DIGITS_IN_COLUMN_PER_BOX as u8 - 1 {
+                            SectorIterMode::Done
+                        } else {
+                            SectorIterMode::Box { 
+                                top_left,
+                                row: row + 1, 
+                                column: 0 
+                            }
+                        }
+                    } else {
+                        SectorIterMode::Box {
+                            top_left,
+                            row,
+                            column: column + 1
+                        }
+                    }
+                };
+
+                if self.visited.insert(current) {
+                    Some(current)
+                } else {
+                    self.next()
+                }
+            },
+
+            SectorIterMode::Done => None,
+        }
+        
+    }
+}
+
+
+type CellsType = Pin<Box<[Cell; CELL_COUNT]>>;
 
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct Grid {
 
-    #[serde(with = "serde_arrays")]
-    cells: [Cell; CELL_COUNT]
+    #[serde(serialize_with = "serialize_cells", deserialize_with = "deserialize_cells")]
+    cells: CellsType
 
 }
+
+fn serialize_cells<S>(cells: &CellsType, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer
+{
+    let mut tup = serializer.serialize_tuple(CELL_COUNT)?;
+
+    for cell in cells.iter() {
+        tup.serialize_element(cell)?;
+    }
+
+    tup.end()
+}
+
+fn deserialize_cells<'de, D>(deserializer: D) -> Result<CellsType, D::Error> 
+    where
+        D: Deserializer<'de>
+{
+
+    struct CellVisitor;
+
+    impl<'de> Visitor<'de> for CellVisitor {
+        type Value = CellsType;
+    
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_fmt(format_args!("an array of {CELL_COUNT} cells"))
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>, 
+        {
+            let mut cells = Box::new([MaybeUninit::<Cell>::uninit(); CELL_COUNT]);
+
+            for i in 0..CELL_COUNT {
+
+                let cell = seq.next_element()?.ok_or_else(
+                    || de::Error::custom(format!("Expected {CELL_COUNT} cells, found {i}"))
+                )?;
+
+                cells[i] = MaybeUninit::new(cell);
+            }
+
+            Ok(
+                Box::into_pin(unsafe {
+                    mem::transmute::<Box<[MaybeUninit<Cell>; CELL_COUNT]>, Box<[Cell; CELL_COUNT]>>(cells)
+                })
+            )
+        }
+    }
+
+    deserializer.deserialize_tuple(CELL_COUNT, CellVisitor)
+}
+
 
 impl Grid {
 
     pub fn new_max_entropy() -> Self {
         Self {
-            cells: [Cell::new_max_entropy(); CELL_COUNT]
+            cells: Box::new([Cell::new_max_entropy(); CELL_COUNT]).into()
         }
     }
 
@@ -52,70 +250,9 @@ impl Grid {
     }
 
 
-    pub fn get_sector(&self, location: Location) -> HashSet<Location> {
+    pub fn get_sector(&self, location: Location) -> SectorIterator {
 
-        // A capacity of 21 is exactly the size of a sector
-        // A hashset may not be the most efficient data structure for this application due to hashing time, though
-        let mut sector = HashSet::with_capacity(21);
-
-        // Search in column
-
-        let mut current_in_column = Location {
-            row: 0,
-            column: location.column
-        };
-
-        sector.insert(current_in_column);
-        
-        while let Some(below) = current_in_column.below() {
-            current_in_column = below;
-            sector.insert(current_in_column);
-        }
-
-        // Search in the row
-
-        let mut current_in_row = Location {
-            row: location.row,
-            column: 0
-        };
-
-        sector.insert(current_in_row);
-
-        while let Some(right) = current_in_row.right() {
-            current_in_row = right;
-            sector.insert(current_in_row);
-        }
-
-        // Search in the box
-
-        let mut leftmost = Location {
-            row: location.row / DIGITS_IN_COLUMN_PER_BOX as u8 * DIGITS_IN_COLUMN_PER_BOX as u8,
-            column: location.column / DIGITS_IN_ROW_PER_BOX as u8 * DIGITS_IN_ROW_PER_BOX as u8
-        };
-
-        for _ in 0..DIGITS_IN_COLUMN_PER_BOX {
-
-            let mut current_in_box = leftmost;
-
-            for _ in 0..DIGITS_IN_ROW_PER_BOX {
-
-                sector.insert(current_in_box);
-
-                current_in_box = if let Some(right) = current_in_box.right() {
-                    right
-                } else {
-                    break
-                };
-            }
-
-            leftmost = if let Some(below) = leftmost.below() {
-                below
-            } else {
-                break
-            };
-        }
-
-        sector
+        SectorIterator::new(location)
     }
 
 
@@ -140,9 +277,11 @@ impl Grid {
     /// Collapse the specified cell and update all the cells in its sector accordingly. 
     /// Recursively collapse all cells that reach a collapsible state as a consequence of a previous collapse.
     /// This function fails if the sudoku rules are not satisfied after the collapse.
-    pub fn update_collapse(&mut self, location: Location, collapsed_digit: Digit) -> Result<(), ()> {
+    pub fn update_collapse(&mut self, location: Location, collapsed_digit: Digit, total_collapsed: &mut usize) -> Result<(), ()> {
 
         self.set_at(location, Cell::Certain { digit: collapsed_digit });
+
+        *total_collapsed += 1;
         
         for cell in self.get_sector(location) {
             
@@ -160,7 +299,7 @@ impl Grid {
                     
                     if let Some(newly_collapsed) = wave.collapsed() {
                         // Recursively collapse all collapsible cells
-                        self.update_collapse(cell, newly_collapsed)?;
+                        self.update_collapse(cell, newly_collapsed, total_collapsed)?;
                     } else {
                         self.set_at(cell, Cell::Uncertain { wave });
                     };
@@ -185,15 +324,19 @@ impl Grid {
 
             let mut grid = Self::new_max_entropy();
 
+            let mut total_collapsed = 0;
+
             for i in 0..CELL_COUNT {
+
+                println!("\n\n{grid}");
 
                 match grid.get_index(i) {
 
                     Cell::Uncertain { wave } => {
 
-                        let collapsed = wave.collapse_random(rng.clone()).expect("Should be valid, but maybe it's not");
+                        let collapsed = wave.collapse_random(rng.clone()).expect("Should be valid because of the wave function");
                         
-                        if grid.update_collapse(Location::from_index(i), collapsed).is_err() {
+                        if grid.update_collapse(Location::from_index(i), collapsed, &mut total_collapsed).is_err() {
                             continue 'gen_attempt;
                         }
 
@@ -276,6 +419,7 @@ impl Grid {
 
 
     /// Return the cell with the lowest entropy among the uncertain cells, skipping the cells that were already visited.
+    /// Note that the lowest possible valid entropy is 2 beacuse an entropy value of 1 would collapse the wave function.
     /// This function fails if all the uncertain cells were already visited.
     pub fn lowest_entropy_except(&self, visited_cells: &HashSet<Location>) -> Result<Option<(Location, WaveFunction)>, ()> {
         
@@ -299,6 +443,13 @@ impl Grid {
                 }
                 
                 let local_entropy = wave.entropy();
+
+                // 2 is the lowest valid entropy a cell can have.
+                // If a cell has entrpy 2, then it's guaranteed that no other cell has a lower entropy value (except those that are already determinate).
+                // Stop the search here to avoid useless iterations.
+                if local_entropy == 2 {
+                    return Ok(Some((location, wave)));
+                }
                 
                 if local_entropy >= lowest_entropy {
                     continue;

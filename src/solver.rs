@@ -10,6 +10,8 @@ pub fn solve_bruteforce(grid: &Grid) -> Grid {
 
     let mut new_grid = grid.clone();
 
+    let mut total_collapsed = 0;
+
     /*
         1. Calculate the wave function of all blank cells.
         2. Choose the cell with the lowest entropy, assuming it hasn't collapsed yet
@@ -33,7 +35,7 @@ pub fn solve_bruteforce(grid: &Grid) -> Grid {
 
             if let Some(collapsed) = wave.collapsed() {
 
-                new_grid.update_collapse(location, collapsed).expect("Should not fail because the board is solvable");
+                new_grid.update_collapse(location, collapsed, &mut total_collapsed).expect("Should not fail because the board is solvable");
 
             } else {
                 new_grid.set_index(i, Cell::Uncertain { wave });
@@ -41,11 +43,13 @@ pub fn solve_bruteforce(grid: &Grid) -> Grid {
         }
     }
 
-    solve_bruteforce_internal(new_grid).expect("The board should be solvable")
+    solve_bruteforce_internal(new_grid, 0, total_collapsed).expect("The board should be solvable")
 }
 
 
-fn solve_bruteforce_internal(grid: Grid) -> Result<Grid, ()> {
+fn solve_bruteforce_internal(grid: Grid, depth: usize, total_collapsed: usize) -> Result<Grid, ()> {
+
+    println!("Backtracking depth: {depth}, total collapsed: {total_collapsed}");
 
     let mut visited: HashSet<Location> = HashSet::new();
 
@@ -76,14 +80,16 @@ fn solve_bruteforce_internal(grid: Grid) -> Result<Grid, ()> {
 
             let mut branch = grid.clone();
 
-            if branch.update_collapse(location, collapsed).is_err() {
+            let mut total_collapsed = total_collapsed;
+
+            if branch.update_collapse(location, collapsed, &mut total_collapsed).is_err() {
                 // Assuming the board is solvable, collapsing this cell with this digit leads to an invalid board.
                 // Proceed the solving process by trying with the next possible state.
                 continue;
             }
 
             // The update was successful, proceed the solving process
-            if let Ok(solved_grid) = solve_bruteforce_internal(branch) {
+            if let Ok(solved_grid) = solve_bruteforce_internal(branch, depth + 1, total_collapsed) {
                 // If a solution is found, stop solving and unwind
                 return Ok(solved_grid);
             }

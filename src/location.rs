@@ -24,6 +24,14 @@ impl Location {
     }
 
 
+    pub const unsafe fn add_unchecked(self, v: Vec2) -> Self {
+        Self {
+            row: (self.row as i8 + v.rows) as u8,
+            column: (self.column as i8 + v.columns) as u8
+        }
+    }
+
+
     const fn add(self, v: Vec2) -> Option<Self> {
 
         let row = self.row as i8 + v.rows;
@@ -63,8 +71,8 @@ impl Location {
 }
 
 
-struct Vec2 {
-    rows: i8,
-    columns: i8
+pub struct Vec2 {
+    pub rows: i8,
+    pub columns: i8
 }
 
