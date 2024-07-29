@@ -21,6 +21,7 @@
             },
             "args": [
                 "gen",
+                "-s"
                 
             ],
             "cwd": "${workspaceFolder}"

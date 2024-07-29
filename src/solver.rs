@@ -50,6 +50,7 @@ pub fn solve_bruteforce(grid: &Grid) -> Grid {
 fn solve_bruteforce_internal(grid: Grid, depth: usize, total_collapsed: usize) -> Result<Grid, ()> {
 
     println!("Backtracking depth: {depth}, total collapsed: {total_collapsed}");
+    // println!("{grid}");
 
     let mut visited: HashSet<Location> = HashSet::new();
 
@@ -87,6 +88,8 @@ fn solve_bruteforce_internal(grid: Grid, depth: usize, total_collapsed: usize) -
                 // Proceed the solving process by trying with the next possible state.
                 continue;
             }
+
+            // println!("Trying board:\n{branch}");
 
             // The update was successful, proceed the solving process
             if let Ok(solved_grid) = solve_bruteforce_internal(branch, depth + 1, total_collapsed) {

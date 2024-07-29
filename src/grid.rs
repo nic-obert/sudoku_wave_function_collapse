@@ -284,6 +284,8 @@ impl Grid {
         *total_collapsed += 1;
         
         for cell in self.get_sector(location) {
+
+            // println!("{self}");
             
             match self.get_at(cell) {
                 
@@ -327,8 +329,6 @@ impl Grid {
             let mut total_collapsed = 0;
 
             for i in 0..CELL_COUNT {
-
-                println!("\n\n{grid}");
 
                 match grid.get_index(i) {
 
