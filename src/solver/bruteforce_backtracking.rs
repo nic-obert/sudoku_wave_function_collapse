@@ -36,7 +36,7 @@ fn solve_bruteforce_internal(grid: Grid) -> Result<Grid, ()> {
 
         // Choose the cell with the lowest entropy, assuming it hasn't collapsed yet
 
-        let (location, mut wave) = match grid.lowest_entropy_except(&visited) {
+        let (location, wave) = match grid.lowest_entropy_except(&visited) {
 
             // No uncertain cells found, stop solving
             Ok(None) => return Ok(grid),
@@ -52,10 +52,7 @@ fn solve_bruteforce_internal(grid: Grid) -> Result<Grid, ()> {
         visited.insert(location);
 
         // Try every possible state of the wave function until the board is solved
-        while let Some(collapsed) = wave.collapse_first() {
-
-            // Mark this digit as already used
-            wave.remove_possibility(collapsed);
+        for collapsed in wave.states() {
 
             let mut branch = grid.clone();
 

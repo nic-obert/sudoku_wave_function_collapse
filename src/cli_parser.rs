@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
 
+use crate::solver::SolvingAlgorithms;
+
 
 #[derive(Parser)]
 pub struct CliParser {
@@ -31,7 +33,11 @@ pub enum Commands {
 
         /// Save the solved board to a file
         #[arg(short='o')]
-        output_file: Option<PathBuf>
+        output_file: Option<PathBuf>,
+
+        /// Select the algorithm to solve the Sudoku
+        #[arg(short = 'a', long, requires("solve"), value_enum, default_value_t)]
+        solving_algorithm: SolvingAlgorithms
 
     },
 
@@ -47,12 +53,17 @@ pub enum Commands {
         solve: bool,
 
         /// Save the solved board to a file
-        #[arg(short = 'f', long)]
+        #[arg(short = 'f', long, requires("solve"))]
         save_solution: Option<PathBuf>,
 
         /// How many initial hints the generated Sudoku has
         #[arg(long)]
-        hints: Option<u8>
+        hints: Option<u8>,
+
+        /// Select the algorithm to solve the Sudoku
+        #[arg(short = 'a', long, requires("solve"), value_enum, default_value_t)]
+        solving_algorithm: SolvingAlgorithms
+
     }
 
 }

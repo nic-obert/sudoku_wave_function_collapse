@@ -393,20 +393,20 @@ pub fn iter_boxes() -> BoxesIterator {
 }
 
 
-pub fn iter_row(location: Location) -> RowIterator {
+// pub fn iter_row(location: Location) -> RowIterator {
 
-    RowIterator::new(location)
-}
-
-
-pub fn iter_column(location: Location) -> ColumnIterator {
-
-    ColumnIterator::new(location)
-}
+//     RowIterator::new(location)
+// }
 
 
-pub fn iter_box(location: Location) -> BoxIterator {
+// pub fn iter_column(location: Location) -> ColumnIterator {
 
-    BoxIterator::new(location)
-}
+//     ColumnIterator::new(location)
+// }
+
+
+// pub fn iter_box(location: Location) -> BoxIterator {
+
+//     BoxIterator::new(location)
+// }
 

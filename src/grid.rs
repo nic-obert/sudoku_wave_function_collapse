@@ -91,6 +91,14 @@ impl Grid {
     }
 
 
+    #[allow(dead_code)]
+    pub fn new_from_cells(cells: Box<[Cell; CELL_COUNT]>) -> Self {
+        Self {
+            cells: cells.into()
+        }
+    }
+
+
     #[inline]
     pub fn get_at(&self, location: Location) -> Cell {
         self.cells[location.into_index()]
@@ -139,6 +147,7 @@ impl Grid {
     pub fn update_collapse(&mut self, location: Location, collapsed_digit: Digit) -> Result<(), ()> {
 
         self.set_at(location, Cell::Certain { digit: collapsed_digit });
+        // println!("{self}");
 
         for cell in grid_iter::iter_sector(location) {
 
@@ -147,6 +156,7 @@ impl Grid {
             match self.get_at(cell) {
                 
                 Cell::Certain { digit } => {
+                    assert!(!(cell == location && digit != collapsed_digit));
                     if cell != location && digit == collapsed_digit {
                         return Err(());
                     }
@@ -158,6 +168,7 @@ impl Grid {
                     
                     if let Some(newly_collapsed) = wave.collapsed() {
                         // Recursively collapse all collapsible cells
+                        // println!("{self}");
                         self.update_collapse(cell, newly_collapsed)?;
                     } else {
                         self.set_at(cell, Cell::Uncertain { wave });
@@ -270,6 +281,37 @@ impl Grid {
         }
 
         new_grid
+    }
+
+
+    /// Return the cell with the lowest entropy among the uncertain cells.
+    /// Note that the lowest possible valid entropy is 2 beacuse an entropy value of 1 would collapse the wave function.
+    /// This function returns None if all cells are certain (board is solved)
+    pub fn lowest_entropy(&self) -> Option<(Location, WaveFunction)> {
+
+        let mut lowest: Option<(Location, WaveFunction)> = None;
+        let mut lowest_entropy = Entropy::MAX;
+
+        for i in 0..CELL_COUNT {
+
+            if let Cell::Uncertain { wave } = self.get_index(i) {
+
+                let local_entropy = wave.entropy();
+
+                let location = Location::from_index(i);
+
+                if local_entropy == 2 {
+                    return Some((location, wave));
+                }
+
+                if local_entropy < lowest_entropy {
+                    lowest = Some((location, wave));
+                    lowest_entropy = local_entropy;
+                }
+            }
+        }
+
+        lowest
     }
 
 
@@ -389,6 +431,36 @@ impl fmt::Display for Grid {
 }
 
 
+#[allow(unused_macros)]
+macro_rules! parse_cell {
+    ($digit:literal) => {
+        Cell::Certain { digit: $digit }
+    };
+    (($($state:literal),+)) => {
+        Cell::Uncertain { 
+            wave: WaveFunction::new_possibilities(&[$($state),+])
+        }
+    };
+}
+
+
+#[macro_export]
+macro_rules! create_board {
+    ([$(
+        $cell: tt
+    ),+]) => {{
+        let cells = Box::new([
+            $(
+                parse_cell!($cell)
+            ),+
+        ]);
+        Grid::new_from_cells(
+            cells.try_into().unwrap()
+        )
+    }};
+}
+
+
 #[cfg(test)]
 mod tests {
 
@@ -419,6 +491,54 @@ mod tests {
         for _ in 0..1000 {
             assert!(Grid::new_random().check_valid());
         }
+    }
+
+
+    #[test]
+    fn create_board() {
+
+        let board = create_board!([
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9,
+            1,2,3,4,5,6,7,8,9
+        ]);
+
+        assert!(!board.check_valid());
+
+        let board = create_board!([
+            5,3,4,6,7,8,9,1,2,
+            6,7,2,1,9,5,3,4,8,
+            1,9,8,3,4,2,5,6,7,
+            8,5,9,7,6,1,4,2,3,
+            4,2,6,8,5,3,7,9,1,
+            7,1,3,9,2,4,8,5,6,
+            9,6,1,5,3,7,2,8,4,
+            2,8,7,4,1,9,6,3,5,
+            3,4,5,2,8,6,1,7,9
+        ]);
+
+        assert!(board.check_valid());
+
+        let board = create_board!([
+            5,(3),4,6,7,8,9,1,2,
+            6,7,(5,3,1),1,9,5,3,4,8,
+            1,9,8,3,4,(1,3,6),5,6,7,
+            8,5,9,7,6,1,4,2,3,
+            4,2,6,8,5,3,7,9,1,
+            7,1,3,9,2,4,8,5,6,
+            9,6,1,5,3,7,2,8,4,
+            2,8,7,4,1,9,6,3,5,
+            3,4,5,2,8,6,1,7,9
+        ]);
+
+        assert!(board.check_valid());
+
     }
     
 }

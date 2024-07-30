@@ -7,7 +7,8 @@ mod cli_parser;
 mod grid_iter;
 
 
-use std::{fs, path::Path};
+use std::path::Path;
+use std::fs;
 
 use clap::Parser;
 use cli_parser::{CliParser, Commands};
@@ -59,7 +60,7 @@ fn main() {
 
         },
 
-        Commands::Gen { output_file, solve, hints, save_solution } => {
+        Commands::Gen { output_file, solve, hints, save_solution, solving_algorithm } => {
             
             let board = Grid::new_random()
                 .with_random_blank_cells(hints.unwrap_or(DEFAULT_HINT_COUNT));
@@ -72,7 +73,7 @@ fn main() {
 
             if solve {
 
-                let solved_board = solver::bruteforce_backtracking::solve(&board);
+                let solved_board = solver::solve_with(&board, solving_algorithm);
 
                 if let Some(output_file) = save_solution {
                     save_board(&solved_board, &output_file);
@@ -83,11 +84,11 @@ fn main() {
 
         },
 
-        Commands::Solve { input_file, output_file } => {
+        Commands::Solve { input_file, output_file, solving_algorithm } => {
             
             let board = load_board(&input_file);
 
-            let solved_board = solver::bruteforce_backtracking::solve(&board);
+            let solved_board = solver::solve_with(&board, solving_algorithm);
 
             if let Some(output_file) = output_file {
                 save_board(&solved_board, &output_file);

@@ -134,15 +134,6 @@ impl WaveFunction {
     }
 
 
-    /// Return the first possible state in the wave function
-    pub fn collapse_first(self) -> Option<Digit> {
-        self.possibilities.iter()
-            .enumerate()
-            .find(|(_i, &p)| p)
-            .map(|(i, _p)| i as Digit + 1)
-    }
-
-
     pub fn entropy(&self) -> Entropy {
 
         let mut entropy = 0;
@@ -171,6 +162,11 @@ impl WaveFunction {
         }
 
         collapsed
+    }
+
+
+    pub fn states(&self) -> impl Iterator<Item = u8> + '_ {
+        self.possibilities.iter().enumerate().filter(|(_i, &s)| s).map(|(i, _s)| i as u8 + 1)
     }
 
 }
