@@ -12,11 +12,8 @@ use serde::ser::SerializeTuple;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::location::{Location, Vec2};
-use crate::config::{BOXES_PER_ROW, CELL_COUNT, DIGITS_IN_COLUMN_PER_BOX, DIGITS_IN_ROW_PER_BOX, DIGIT_BASE, ROW_COUNT};
+use crate::config::{BOXES_PER_ROW, CELL_COUNT, CELLS_IN_COLUMN_PER_BOX, CELLS_IN_ROW_PER_BOX, DIGIT_BASE, ROW_COUNT, CELLS_PER_SECTOR};
 use crate::cell::{Cell, Digit, Entropy, WaveFunction};
-
-
-const SIZE_OF_SECTOR: usize = 21;
 
 
 pub struct SectorIterator {
@@ -44,7 +41,7 @@ impl SectorIterator {
 
     pub fn new(center: Location) -> Self {
         Self {
-            visited: HashSet::with_capacity(SIZE_OF_SECTOR),
+            visited: HashSet::with_capacity(CELLS_PER_SECTOR),
             iter_mode: SectorIterMode::Row { 
                 current: Location { 
                     row: center.row, 
@@ -95,8 +92,8 @@ impl Iterator for SectorIterator {
                 } else {
                     SectorIterMode::Box { 
                         top_left: Location {
-                            row: self.center.row / DIGITS_IN_COLUMN_PER_BOX as u8 * DIGITS_IN_COLUMN_PER_BOX as u8,
-                            column: self.center.column / DIGITS_IN_ROW_PER_BOX as u8 * DIGITS_IN_ROW_PER_BOX as u8
+                            row: self.center.row / CELLS_IN_COLUMN_PER_BOX as u8 * CELLS_IN_COLUMN_PER_BOX as u8,
+                            column: self.center.column / CELLS_IN_ROW_PER_BOX as u8 * CELLS_IN_ROW_PER_BOX as u8
                         }, 
                         row: 0, 
                         column: 0 
@@ -118,9 +115,9 @@ impl Iterator for SectorIterator {
 
                 self.iter_mode = {
 
-                    if column == DIGITS_IN_ROW_PER_BOX as u8 - 1 {
+                    if column == CELLS_IN_ROW_PER_BOX as u8 - 1 {
 
-                        if row == DIGITS_IN_COLUMN_PER_BOX as u8 - 1 {
+                        if row == CELLS_IN_COLUMN_PER_BOX as u8 - 1 {
                             SectorIterMode::Done
                         } else {
                             SectorIterMode::Box { 
@@ -482,9 +479,9 @@ impl Grid {
 
             write!(f, "{}", "|".bold())?;
             
-            for cell_column_index in 0..DIGITS_IN_ROW_PER_BOX {
+            for cell_column_index in 0..CELLS_IN_ROW_PER_BOX {
 
-                self.get_index(cell_column_index + box_index * DIGITS_IN_ROW_PER_BOX + row_index * DIGIT_BASE)
+                self.get_index(cell_column_index + box_index * CELLS_IN_ROW_PER_BOX + row_index * DIGIT_BASE)
                     .display_row(row_in_cell_index, f)?;
 
                 write!(f, "{}", "|".bold())?;
@@ -515,13 +512,13 @@ impl fmt::Display for Grid {
 
         for row_index in 0..ROW_COUNT {
 
-            for row_in_cell_index in 0..DIGITS_IN_COLUMN_PER_BOX {
+            for row_in_cell_index in 0..CELLS_IN_COLUMN_PER_BOX {
 
                 self.display_row(row_index, row_in_cell_index, f)?;
 
             }
 
-            if (row_index+1) % DIGITS_IN_COLUMN_PER_BOX == 0 {
+            if (row_index+1) % CELLS_IN_COLUMN_PER_BOX == 0 {
                 Grid::display_horizontal_box_separator(f)?;
             } else {
                 Grid::display_horizontal_normal_separator(f)?;
