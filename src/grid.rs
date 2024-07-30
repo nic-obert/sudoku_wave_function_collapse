@@ -11,142 +11,10 @@ use serde::de::{self, Visitor};
 use serde::ser::SerializeTuple;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use crate::location::{Location, Vec2};
-use crate::config::{BOXES_PER_ROW, CELL_COUNT, CELLS_IN_COLUMN_PER_BOX, CELLS_IN_ROW_PER_BOX, DIGIT_BASE, ROW_COUNT, CELLS_PER_SECTOR};
+use crate::grid_iter;
+use crate::location::Location;
+use crate::config::{BOXES_PER_ROW, CELL_COUNT, CELLS_IN_COLUMN_PER_BOX, CELLS_IN_ROW_PER_BOX, DIGIT_BASE, ROW_COUNT};
 use crate::cell::{Cell, Digit, Entropy, WaveFunction};
-
-
-pub struct SectorIterator {
-
-    visited: HashSet<Location>,
-    iter_mode: SectorIterMode,
-    center: Location
-
-}
-
-enum SectorIterMode {
-
-    Row { current: Location },
-
-    Column { current: Location },
-
-    Box { top_left: Location, row: u8, column: u8 },
-
-    Done
-
-}
-
-impl SectorIterator {
-
-
-    pub fn new(center: Location) -> Self {
-        Self {
-            visited: HashSet::with_capacity(CELLS_PER_SECTOR),
-            iter_mode: SectorIterMode::Row { 
-                current: Location { 
-                    row: center.row, 
-                    column: 0 
-                } },
-            center
-        }
-    }
-
-}
-
-impl Iterator for SectorIterator {
-    type Item = Location;
-
-    fn next(&mut self) -> Option<Self::Item> {
-
-        /*
-            Iteration goes like this:
-            1. iterate through the row
-            2. iterate through the column
-            3. iterate through the box
-        */
-        
-        match self.iter_mode {
-
-            SectorIterMode::Row { current } => {
-                
-                self.iter_mode = if let Some(next) = current.right() {
-                    SectorIterMode::Row { current: next }
-                } else {
-                    SectorIterMode::Column { current: Location {
-                        row: 0,
-                        column: self.center.column
-                    } }
-                };
-                
-                if self.visited.insert(current) {
-                    Some(current)
-                } else {
-                    self.next()
-                }
-            },
-
-            SectorIterMode::Column { current } => {
-
-                self.iter_mode = if let Some(next) = current.below() {
-                    SectorIterMode::Column { current: next }
-                } else {
-                    SectorIterMode::Box { 
-                        top_left: Location {
-                            row: self.center.row / CELLS_IN_COLUMN_PER_BOX as u8 * CELLS_IN_COLUMN_PER_BOX as u8,
-                            column: self.center.column / CELLS_IN_ROW_PER_BOX as u8 * CELLS_IN_ROW_PER_BOX as u8
-                        }, 
-                        row: 0, 
-                        column: 0 
-                    }
-                };
-
-                if self.visited.insert(current) {
-                    Some(current)
-                } else {
-                    self.next()
-                }
-            },
-
-            SectorIterMode::Box { top_left, row, column } => {
-
-                let current = unsafe {
-                    top_left.add_unchecked(Vec2 { rows: row as i8, columns: column as i8 })
-                };
-
-                self.iter_mode = {
-
-                    if column == CELLS_IN_ROW_PER_BOX as u8 - 1 {
-
-                        if row == CELLS_IN_COLUMN_PER_BOX as u8 - 1 {
-                            SectorIterMode::Done
-                        } else {
-                            SectorIterMode::Box { 
-                                top_left,
-                                row: row + 1, 
-                                column: 0 
-                            }
-                        }
-                    } else {
-                        SectorIterMode::Box {
-                            top_left,
-                            row,
-                            column: column + 1
-                        }
-                    }
-                };
-
-                if self.visited.insert(current) {
-                    Some(current)
-                } else {
-                    self.next()
-                }
-            },
-
-            SectorIterMode::Done => None,
-        }
-        
-    }
-}
 
 
 type CellsType = Pin<Box<[Cell; CELL_COUNT]>>;
@@ -247,17 +115,11 @@ impl Grid {
     }
 
 
-    pub fn get_sector(&self, location: Location) -> SectorIterator {
-
-        SectorIterator::new(location)
-    }
-
-
     pub fn wave_at(&self, location: Location) -> WaveFunction {
 
         let mut wave = WaveFunction::new_max_entropy();
 
-        for cell in self.get_sector(location) {
+        for cell in grid_iter::iter_sector(location) {
 
             // Ignore the compatibility of single wave functions in the sector 
 
@@ -274,13 +136,11 @@ impl Grid {
     /// Collapse the specified cell and update all the cells in its sector accordingly. 
     /// Recursively collapse all cells that reach a collapsible state as a consequence of a previous collapse.
     /// This function fails if the sudoku rules are not satisfied after the collapse.
-    pub fn update_collapse(&mut self, location: Location, collapsed_digit: Digit, total_collapsed: &mut usize) -> Result<(), ()> {
+    pub fn update_collapse(&mut self, location: Location, collapsed_digit: Digit) -> Result<(), ()> {
 
         self.set_at(location, Cell::Certain { digit: collapsed_digit });
 
-        *total_collapsed += 1;
-        
-        for cell in self.get_sector(location) {
+        for cell in grid_iter::iter_sector(location) {
 
             // println!("{self}");
             
@@ -298,7 +158,7 @@ impl Grid {
                     
                     if let Some(newly_collapsed) = wave.collapsed() {
                         // Recursively collapse all collapsible cells
-                        self.update_collapse(cell, newly_collapsed, total_collapsed)?;
+                        self.update_collapse(cell, newly_collapsed)?;
                     } else {
                         self.set_at(cell, Cell::Uncertain { wave });
                     };
@@ -323,8 +183,6 @@ impl Grid {
 
             let mut grid = Self::new_max_entropy();
 
-            let mut total_collapsed = 0;
-
             for i in 0..CELL_COUNT {
 
                 match grid.get_index(i) {
@@ -333,7 +191,7 @@ impl Grid {
 
                         let collapsed = wave.collapse_random(rng.clone()).expect("Should be valid because of the wave function");
                         
-                        if grid.update_collapse(Location::from_index(i), collapsed, &mut total_collapsed).is_err() {
+                        if grid.update_collapse(Location::from_index(i), collapsed).is_err() {
                             continue 'gen_attempt;
                         }
 
@@ -364,7 +222,7 @@ impl Grid {
 
                     let location = Location::from_index(i);
 
-                    for neighbor in self.get_sector(location) {
+                    for neighbor in grid_iter::iter_sector(location) {
 
                         match self.get_at(neighbor) {
 

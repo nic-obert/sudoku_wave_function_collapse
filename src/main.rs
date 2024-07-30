@@ -4,6 +4,7 @@ mod cell;
 mod config;
 mod solver;
 mod cli_parser;
+mod grid_iter;
 
 
 use std::{fs, path::Path};
@@ -71,7 +72,7 @@ fn main() {
 
             if solve {
 
-                let solved_board = solver::solve_bruteforce(&board);
+                let solved_board = solver::bruteforce_backtracking::solve(&board);
 
                 if let Some(output_file) = save_solution {
                     save_board(&solved_board, &output_file);
@@ -86,7 +87,7 @@ fn main() {
             
             let board = load_board(&input_file);
 
-            let solved_board = solver::solve_bruteforce(&board);
+            let solved_board = solver::bruteforce_backtracking::solve(&board);
 
             if let Some(output_file) = output_file {
                 save_board(&solved_board, &output_file);

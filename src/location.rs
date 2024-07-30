@@ -32,7 +32,7 @@ impl Location {
     }
 
 
-    const fn add(self, v: Vec2) -> Option<Self> {
+    pub const fn add(self, v: Vec2) -> Option<Self> {
 
         let row = self.row as i8 + v.rows;
         let column = self.column as i8 + v.columns;
