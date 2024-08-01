@@ -431,7 +431,7 @@ impl fmt::Display for Grid {
 }
 
 
-#[allow(unused_macros)]
+#[macro_export]
 macro_rules! parse_cell {
     ($digit:literal) => {
         Cell::Certain { digit: $digit }
@@ -441,6 +441,9 @@ macro_rules! parse_cell {
             wave: WaveFunction::new_possibilities(&[$($state),+])
         }
     };
+    (()) => {
+        Cell::Blank
+    }
 }
 
 
