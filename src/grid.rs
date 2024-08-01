@@ -143,6 +143,18 @@ impl Grid {
     }
 
 
+    pub fn is_solved(&self) -> bool {
+
+        for cell in self.cells.iter() {
+            if !matches!(cell, Cell::Certain { .. }) {
+                return false;
+            }
+        }
+        
+        true
+    }
+
+
     /// Collapse the specified cell and update all the cells in its sector accordingly. 
     /// Collapse all cells that reach a collapsible state as a consequence of a previous collapse.
     /// This function fails if the sudoku rules are not satisfied after the collapse.

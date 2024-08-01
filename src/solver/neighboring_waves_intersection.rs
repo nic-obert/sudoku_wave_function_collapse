@@ -23,7 +23,11 @@ pub fn solve(base_grid: &Grid) -> Grid {
 
     utils::initialize_waves(&mut grid);
 
-    solve_backtracking(grid).expect("Board should be solvable")
+    if grid.is_solved() {
+        grid
+    } else {
+        solve_backtracking(grid).expect("Board should be solvable")
+    }
 }
 
 
@@ -190,6 +194,12 @@ mod tests {
             3,(),5,8,(),(),(),(),(),
             (),9,(),2,(),(),7,(),()
         ]);
+
+        /*
+            This board is solvable without backtracking 
+            and without neighboring wave function analysis.
+            The first pass that calculates the wave functions shoud be enough. (manually tested)
+        */
 
         // save_board(&board, "test_boards/hard.json");
 
