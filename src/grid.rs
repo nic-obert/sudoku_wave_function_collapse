@@ -108,12 +108,14 @@ impl Grid {
     #[inline]
     pub fn set_at(&mut self, location: Location, cell: Cell) {
         self.cells[location.into_index()] = cell;
+        println!("Updated: {location}\n{self}");
     }
 
 
     #[inline]
     pub fn set_index(&mut self, i: usize, cell: Cell) {
         self.cells[i] = cell;
+        println!("Updated: {}\n{self}", Location::from_index(i));
     }
 
 
@@ -142,42 +144,52 @@ impl Grid {
 
 
     /// Collapse the specified cell and update all the cells in its sector accordingly. 
-    /// Recursively collapse all cells that reach a collapsible state as a consequence of a previous collapse.
+    /// Collapse all cells that reach a collapsible state as a consequence of a previous collapse.
     /// This function fails if the sudoku rules are not satisfied after the collapse.
     pub fn update_collapse(&mut self, location: Location, collapsed_digit: Digit) -> Result<(), ()> {
 
-        self.set_at(location, Cell::Certain { digit: collapsed_digit });
-        // println!("{self}");
+        let mut to_collapse = vec![(location, collapsed_digit)];
 
-        for cell in grid_iter::iter_sector(location) {
+        while let Some((location, collapsed_digit)) = to_collapse.pop() {
 
+            if matches!(self.get_at(location), Cell::Certain { digit } if digit == collapsed_digit) {
+                // Already updated by a previous iteration
+                continue;
+            }
+            assert!(!matches!(self.get_at(location), Cell::Certain { .. }));
+            self.set_at(location, Cell::Certain { digit: collapsed_digit });
             // println!("{self}");
-            
-            match self.get_at(cell) {
+    
+            for cell in grid_iter::iter_sector(location) {
+    
+                // println!("{self}");
                 
-                Cell::Certain { digit } => {
-                    assert!(!(cell == location && digit != collapsed_digit));
-                    if cell != location && digit == collapsed_digit {
-                        return Err(());
+                match self.get_at(cell) {
+                    
+                    Cell::Certain { digit } => {
+                        assert!(!(cell == location && digit != collapsed_digit));
+                        if cell != location && digit == collapsed_digit {
+                            println!("Unsolvable grid:\n{self}");
+                            return Err(());
+                        }
+                    },
+                    
+                    Cell::Uncertain { mut wave } => {
+                        
+                        wave.remove_possibility(collapsed_digit);
+                        
+                        if let Some(newly_collapsed) = wave.collapsed() {
+                            to_collapse.push((cell, newly_collapsed));
+                        } else {
+                            self.set_at(cell, Cell::Uncertain { wave });
+                        };
+                    },
+    
+                    Cell::Blank => {
+                        // Do nothing. Blank cells will be updated directly by the solver.
                     }
-                },
-                
-                Cell::Uncertain { mut wave } => {
-                    
-                    wave.remove_possibility(collapsed_digit);
-                    
-                    if let Some(newly_collapsed) = wave.collapsed() {
-                        // Recursively collapse all collapsible cells
-                        // println!("{self}");
-                        self.update_collapse(cell, newly_collapsed)?;
-                    } else {
-                        self.set_at(cell, Cell::Uncertain { wave });
-                    };
-                },
-
-                Cell::Blank => {
-                    // Do nothing. Blank cells will be updated directly by the solver.
                 }
+    
             }
 
         }

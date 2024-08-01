@@ -5,45 +5,14 @@ mod config;
 mod solver;
 mod cli_parser;
 mod grid_iter;
+mod file_utils;
 
-
-use std::path::Path;
-use std::fs;
 
 use clap::Parser;
 use cli_parser::{CliParser, Commands};
 use config::DEFAULT_HINT_COUNT;
 use grid::Grid;
-
-
-fn error(message: &str) -> ! {
-    eprintln!("{message}");
-    std::process::exit(1);
-}
-
-
-fn save_board(board: &Grid, file_path: &Path) {
-    
-    let json = serde_json::to_string(&board).expect("A generated board should be serializable");
-
-    fs::write(file_path, json).unwrap_or_else(
-        |e| error(format!("Could not save file {}:\n{}", file_path.display(), e).as_str())
-    );
-}
-
-
-fn load_board(file_path: &Path) -> Grid {
-
-    let raw_data = fs::read_to_string(&file_path).unwrap_or_else(
-        |e| error(format!("Could not read file {}:\n{}", file_path.display(), e).as_str())
-    );
-
-    let board: Grid = serde_json::from_str(&raw_data).unwrap_or_else(
-        |e| error(format!("Could not parse file {}:\n{}", file_path.display(), e).as_str())
-    );
-
-    board
-}
+use file_utils::{load_board, save_board};
 
 
 fn main() {
@@ -87,6 +56,8 @@ fn main() {
         Commands::Solve { input_file, output_file, solving_algorithm } => {
             
             let board = load_board(&input_file);
+
+            println!("{board}");
 
             let solved_board = solver::solve_with(&board, solving_algorithm);
 

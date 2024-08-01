@@ -7,6 +7,28 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug solver",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=sudoku_wave_function_collapse",
+                    "--package=sudoku_wave_function_collapse"
+                ],
+                "filter": {
+                    "name": "sudoku_wave_function_collapse",
+                    "kind": "bin"
+                }
+            },
+            "args": [
+                "solve",
+                "${workspaceFolder}/test_boards/hard.json"
+                
+            ],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug executable 'sudoku_wave_function_collapse'",
             "cargo": {
                 "args": [

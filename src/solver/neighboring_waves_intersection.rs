@@ -128,6 +128,7 @@ fn pass_wave_group(grid: &mut Grid, it: impl Iterator<Item = impl Iterator<Item 
 #[cfg(test)]
 mod tests {
 
+    // use crate::file_utils::save_board;
     use crate::parse_cell;
     use crate::create_board;
 
@@ -148,6 +149,8 @@ mod tests {
             (),(),(),(),1,(),2,(),8
         ]);
 
+        // save_board(&board, "test_boards/easy.json");
+
         solve(&board);
     }
 
@@ -167,6 +170,8 @@ mod tests {
             7,(),3,4,5,8,(),2,1
         ]);
 
+        // save_board(&board, "test_boards/medium.json");
+
         solve(&board);
     }
 
@@ -185,6 +190,8 @@ mod tests {
             3,(),5,8,(),(),(),(),(),
             (),9,(),2,(),(),7,(),()
         ]);
+
+        // save_board(&board, "test_boards/hard.json");
 
         solve(&board);
     }

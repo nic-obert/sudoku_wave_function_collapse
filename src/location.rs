@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::config::{COLUMN_COUNT, DIGIT_BASE, ROW_COUNT};
 
 
@@ -7,6 +9,12 @@ pub struct Location {
     pub row: u8,
     pub column: u8
 
+}
+
+impl fmt::Display for Location {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.row, self.column)
+    }
 }
 
 impl Location {
