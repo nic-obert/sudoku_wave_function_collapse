@@ -1,10 +1,7 @@
-mod location;
 mod grid;
-mod cell;
 mod config;
 mod solver;
 mod cli_parser;
-mod grid_iter;
 mod file_utils;
 
 
@@ -24,7 +21,7 @@ fn main() {
         Commands::View { input_file } => {
             
             let board = load_board(&input_file);
-
+            
             println!("{board}");
 
         },

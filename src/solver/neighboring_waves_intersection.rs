@@ -1,8 +1,5 @@
-use crate::location::Location;
-use crate::grid_iter;
-use crate::grid::Grid;
+use crate::grid::{self, Cell, Grid, Location};
 use crate::config::DIGIT_BASE;
-use crate::cell::Cell;
 
 use super::utils;
 
@@ -34,9 +31,9 @@ pub fn solve(base_grid: &Grid) -> Grid {
 fn solve_backtracking(mut grid: Grid) -> Result<Grid, ()> {
 
     // Try to solve the board by analyzing the neighboring wave functions.
-    while pass_wave_group(&mut grid, grid_iter::iter_rows())?
-        || pass_wave_group(&mut grid, grid_iter::iter_columns())?
-        || pass_wave_group(&mut grid, grid_iter::iter_boxes())?
+    while pass_wave_group(&mut grid, grid::iter_rows())?
+        || pass_wave_group(&mut grid, grid::iter_columns())?
+        || pass_wave_group(&mut grid, grid::iter_boxes())?
     { }
 
     // If nothing changed from the previous iteration, the board can no longer be updated using this technique.

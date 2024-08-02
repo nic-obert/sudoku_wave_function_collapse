@@ -1,7 +1,5 @@
-use crate::location::Location;
-use crate::grid::Grid;
+use crate::grid::{Cell, Grid, Location};
 use crate::config::CELL_COUNT;
-use crate::cell::Cell;
 
 
 /// Calculate and initialize the wave function of all blank cells in the given grid.

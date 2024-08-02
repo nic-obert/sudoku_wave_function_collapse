@@ -1,8 +1,7 @@
 use std::collections::HashSet;
 
 use crate::config::CELL_COUNT;
-use crate::location::Location;
-use crate::grid::Grid;
+use crate::grid::{Grid, Location};
 
 use super::utils;
 

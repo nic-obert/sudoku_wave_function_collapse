@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 
-use crate::{config::{CELLS_IN_COLUMN_PER_BOX, CELLS_IN_ROW_PER_BOX, CELLS_PER_SECTOR}, location::{Location, Vec2}};
+use crate::config::{CELLS_IN_COLUMN_PER_BOX, CELLS_IN_ROW_PER_BOX, CELLS_PER_SECTOR};
+
+use super::{Location, Vec2};
 
 
 pub struct RowIterator {
@@ -283,6 +285,7 @@ pub struct SectorIterator {
 
 }
 
+
 enum SectorIterMode {
 
     Row (RowIterator),
@@ -402,7 +405,6 @@ pub fn iter_row(location: Location) -> RowIterator {
 
 
 #[allow(dead_code)]
-
 pub fn iter_column(location: Location) -> ColumnIterator {
 
     ColumnIterator::new(location)
@@ -422,11 +424,10 @@ mod tests {
 
     use std::collections::HashSet;
 
-    use crate::grid_iter::{iter_box, iter_column, iter_row};
-    use crate::location::Location;
+    use crate::grid::Location;
     use crate::config::{CELLS_PER_BOX, CELLS_PER_COLUMN, CELLS_PER_ROW, CELLS_PER_SECTOR};
-
-    use super::iter_sector;
+    
+    use super::*;
 
 
     #[test]
