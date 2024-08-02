@@ -22,3 +22,6 @@ pub const CELLS_PER_SECTOR: usize = CELLS_PER_ROW - CELLS_IN_ROW_PER_BOX + CELLS
 
 pub const DEFAULT_HINT_COUNT: u8 = 30;
 
+
+pub const TEST_BOARDS_DIR: &'static str = "test_boards";
+

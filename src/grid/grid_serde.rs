@@ -32,6 +32,8 @@ impl Grid {
 
     pub fn deserialize_from_string(input: &str) -> Result<Self, String> {
 
+        // This parser allows a narrow superset of the intended language, but it's ok because it works and I'm lazy
+
         let mut cells = Box::new([MaybeUninit::<Cell>::uninit(); CELL_COUNT]);
 
         let mut cell_i = 0;
@@ -58,9 +60,9 @@ impl Grid {
                         )
                     }
 
-                    if last_ch != ',' {
+                    if !matches!(last_ch, ',' | ' ' | '\t' | '\n') {
                         return Err(
-                            format!("Unexpected token '(' at char index {ch_i} after token {last_ch}")
+                            format!("Unexpected token '(' at char index {ch_i} after token '{last_ch}'")
                         )
                     }
 
@@ -68,6 +70,13 @@ impl Grid {
                 },
 
                 ')' => {
+
+                    if last_ch == ',' {
+                        return Err(
+                            format!("Unexpected token ')' at char index {ch_i} after token ','")
+                        );
+                    }
+
                     match state {
 
                         ParserState::TopLevel
@@ -99,7 +108,7 @@ impl Grid {
                 
                 ',' => if matches!(last_ch, ',' | '(') {
                         return Err(
-                            format!("Unexpected token ',' at char index {ch_i} after '{last_ch}'")
+                            format!("Unexpected token ',' at char index {ch_i} after token '{last_ch}'")
                         );
                     },
 
@@ -130,7 +139,7 @@ impl Grid {
                             }
                         }
 
-                    } else {
+                    } else if !matches!(ch, ' ' | '\t' | '\n') {
                         return Err(
                             format!("Unexpected token '{ch}' at char index {ch_i}")
                         )
@@ -147,10 +156,12 @@ impl Grid {
             )
         }
 
-        if let Some((ch_i, ch)) = input_iter.next() {
-            return Err(
-                format!("Unexpected token '{ch}' at char index {ch_i}. All {CELL_COUNT} cells have been provided.")
-            );
+        while let Some((ch_i, ch)) = input_iter.next() {
+            if !matches!(ch, ' ' | '\t' | '\n') {
+                return Err(
+                    format!("Unexpected token '{ch}' at char index {ch_i}. All {CELL_COUNT} cells have been provided.")
+                );
+            }
         } 
 
         if cell_i != CELL_COUNT {

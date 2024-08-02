@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::fs;
 
+use crate::config::TEST_BOARDS_DIR;
 use crate::grid::Grid;
 
 
@@ -35,5 +36,21 @@ pub fn load_board<P>(file_path: &P) -> Grid
     );
 
     board
+}
+
+
+#[allow(dead_code)]
+pub fn get_test_boards() -> impl Iterator<Item = Grid> {
+    
+    let dir = fs::read_dir(TEST_BOARDS_DIR)
+        .unwrap_or_else(|e| error(format!("Could not read test boards directory {TEST_BOARDS_DIR}:\n{e}").as_str()));
+
+    dir.map(|entry| {
+
+        let entry = entry.as_ref()
+            .unwrap_or_else(|e| error(format!("Could not read directory entry {:?}:\n{e}", entry).as_str()));
+
+        load_board(&entry.path())
+    })
 }
 
