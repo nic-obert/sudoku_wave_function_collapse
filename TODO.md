@@ -12,11 +12,11 @@ Project Description
 
 ### In Progress
 
-- [ ] create a tool to save sudokus to a file using the right format  
 - [ ] write a good readme  
 
 ### Done ✓
 
+- [x] rewrite the serde interface  
 - [x] Implement solver that analyzes wave functions and intersects them  
 - [x] Add the possiblity to save and load boards from/to a file  
 - [x] implement brute force solver (still uses wave functions)  

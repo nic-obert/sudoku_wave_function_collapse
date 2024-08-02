@@ -1,12 +1,11 @@
 use core::fmt;
 use colored::Colorize;
 use rand::{rngs::ThreadRng, Rng};
-use serde::{Deserialize, Serialize};
 
 use crate::config::{CERTAIN_DIGIT_ROW_IN_BOX, DIGITS_IN_ROW_PER_CELL, DIGIT_BASE};
 
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Cell {
 
     /// Represents a cell with a certain digit
@@ -66,7 +65,7 @@ pub type Digit = u8;
 pub type Entropy = u8;
 
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct WaveFunction {
 
     // TODO: make this smaller by using bit fields to avoid copying hundreds of bytes when duplication the board
@@ -84,8 +83,20 @@ impl WaveFunction {
     }
 
 
+    pub const fn new_min_entropy() -> Self {
+        Self {
+            possibilities: [false; DIGIT_BASE]
+        }
+    }
+
+
     pub fn remove_possibility(&mut self, digit: Digit) {
         self.possibilities[digit as usize - 1] = false;
+    }
+
+
+    pub fn add_possibility(&mut self, digit: Digit) {
+        self.possibilities[digit as usize - 1] = true;
     }
 
     
@@ -138,8 +149,8 @@ impl WaveFunction {
 
         let mut entropy = 0;
 
-        for digit in self.possibilities {
-            entropy += digit as Entropy;
+        for state in self.possibilities {
+            entropy += state as Entropy;
         }
 
         entropy

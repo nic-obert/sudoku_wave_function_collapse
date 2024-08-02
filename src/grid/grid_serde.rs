@@ -1,89 +1,170 @@
 use std::mem::{self, MaybeUninit};
 
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::ser::SerializeTuple;
-use serde::de::{self, Visitor};
-
-use crate::grid::{Cell, Grid};
+use crate::grid::{Cell, Grid, WaveFunction};
 use crate::config::CELL_COUNT;
 
-use super::grid::CellsType;
 
+impl Grid {
 
-impl Serialize for Grid {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer
-    {
+    pub fn serialize_to_string(&self) -> String {
+        
+        // TODO: very much not efficient to instantiate a string for every token, but it's concise and easy
 
-        // let cells = self.cells
+        self.cells.iter()
 
-        todo!()
-    }
-}
+            .map(|cell| match cell {
 
+                Cell::Certain { digit } => 
+                    digit.to_string(),
 
-impl<'de> Deserialize<'de> for Grid {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>
-    {
-        todo!()
-    }
-}
+                Cell::Uncertain { wave }
+                    => format!("({})", wave.states().map(|s| s.to_string()).collect::<Vec<String>>().join(",")),
 
+                Cell::Blank
+                    => "()".to_owned(),
+            })
 
-pub fn serialize_cells<S>(cells: &CellsType, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer
-{
-    let mut tup = serializer.serialize_tuple(CELL_COUNT)?;
+            .collect::<Vec<String>>()
 
-    for cell in cells.iter() {
-        tup.serialize_element(cell)?;
+            .join(",")
     }
 
-    tup.end()
-}
 
+    pub fn deserialize_from_string(input: &str) -> Result<Self, String> {
 
-pub fn deserialize_cells<'de, D>(deserializer: D) -> Result<CellsType, D::Error> 
-    where
-        D: Deserializer<'de>
-{
+        let mut cells = Box::new([MaybeUninit::<Cell>::uninit(); CELL_COUNT]);
 
-    struct CellVisitor;
+        let mut cell_i = 0;
 
-    impl<'de> Visitor<'de> for CellVisitor {
-        type Value = CellsType;
-    
-        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-            formatter.write_fmt(format_args!("an array of {CELL_COUNT} cells"))
+        enum ParserState {
+            TopLevel,
+            InCell (WaveFunction)
         }
 
-        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
-            where
-                A: serde::de::SeqAccess<'de>, 
-        {
-            let mut cells = Box::new([MaybeUninit::<Cell>::uninit(); CELL_COUNT]);
+        let mut state = ParserState::TopLevel;
+        let mut last_ch = ',';
 
-            for i in 0..CELL_COUNT {
+        let mut input_iter = input.char_indices();
 
-                let cell = seq.next_element()?.ok_or_else(
-                    || de::Error::custom(format!("Expected {CELL_COUNT} cells, found {i}"))
-                )?;
+        while let Some((ch_i, ch)) = input_iter.next() {
 
-                cells[i] = MaybeUninit::new(cell);
+            match ch {
+
+                '(' => {
+
+                    if matches!(state, ParserState::InCell (_)) {
+                        return Err(
+                            format!("Unexpected token '(' inside a cell descriptor at char index {ch_i}")
+                        )
+                    }
+
+                    if last_ch != ',' {
+                        return Err(
+                            format!("Unexpected token '(' at char index {ch_i} after token {last_ch}")
+                        )
+                    }
+
+                    state = ParserState::InCell (WaveFunction::new_min_entropy());
+                },
+
+                ')' => {
+                    match state {
+
+                        ParserState::TopLevel
+                            => return Err(
+                                format!("Unexpected token ')' outside a cell descriptor at char index {ch_i}")
+                            ),
+
+                        ParserState::InCell(wave) => {
+
+                            cells[cell_i] = MaybeUninit::new(
+                                if wave.entropy() == 0 {
+                                    Cell::Blank
+                                } else {
+                                    Cell::Uncertain { wave }
+                                }
+                            );
+
+                            state = ParserState::TopLevel;
+
+                            cell_i += 1;
+
+                            if cell_i == CELL_COUNT {
+                                break;
+                            }
+                        }
+                    }
+                    
+                },
+                
+                ',' => if matches!(last_ch, ',' | '(') {
+                        return Err(
+                            format!("Unexpected token ',' at char index {ch_i} after '{last_ch}'")
+                        );
+                    },
+
+                ch => {
+                    if let Some(digit) = ch.to_digit(10) {
+
+                        if digit == 0 {
+                            return Err(
+                                format!("Unexpected digit '0' as cell state. Possible states are digits 1-9")
+                            )
+                        }
+
+                        match state {
+
+                            ParserState::TopLevel => {
+                                cells[cell_i] = MaybeUninit::new(Cell::Certain { digit: digit as u8 });
+
+                                cell_i += 1;
+
+                                if cell_i == CELL_COUNT {
+                                    break;
+                                }
+                            },
+
+                            ParserState::InCell(mut wave) => {
+                                wave.add_possibility(digit as u8);
+                                state = ParserState::InCell(wave)
+                            }
+                        }
+
+                    } else {
+                        return Err(
+                            format!("Unexpected token '{ch}' at char index {ch_i}")
+                        )
+                    }
+                }
             }
 
-            Ok(
-                Box::into_pin(unsafe {
-                    mem::transmute::<Box<[MaybeUninit<Cell>; CELL_COUNT]>, Box<[Cell; CELL_COUNT]>>(cells)
-                })
+            last_ch = ch;
+        }
+
+        if matches!(state, ParserState::InCell(_)) {
+            return Err(
+                format!("Unclosed cell descriptor")
             )
         }
+
+        if let Some((ch_i, ch)) = input_iter.next() {
+            return Err(
+                format!("Unexpected token '{ch}' at char index {ch_i}. All {CELL_COUNT} cells have been provided.")
+            );
+        } 
+
+        if cell_i != CELL_COUNT {
+            return Err(
+                format!("Too few cells were provided: expected {CELL_COUNT} cells, but got {} cells", cell_i - 1)
+            );
+        }
+
+        Ok(Self {
+            cells: unsafe {
+                mem::transmute(cells)
+            }
+        })
     }
 
-    deserializer.deserialize_tuple(CELL_COUNT, CellVisitor)
 }
 
