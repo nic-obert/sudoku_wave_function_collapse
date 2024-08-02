@@ -264,6 +264,7 @@ impl Iterator for BoxIterator {
                 self.done = true;
             } else {
                 self.row += 1;
+                self.column = 0;
             }
         } else {
             self.column += 1;
@@ -393,20 +394,234 @@ pub fn iter_boxes() -> BoxesIterator {
 }
 
 
-// pub fn iter_row(location: Location) -> RowIterator {
+#[allow(dead_code)]
+pub fn iter_row(location: Location) -> RowIterator {
 
-//     RowIterator::new(location)
-// }
-
-
-// pub fn iter_column(location: Location) -> ColumnIterator {
-
-//     ColumnIterator::new(location)
-// }
+    RowIterator::new(location)
+}
 
 
-// pub fn iter_box(location: Location) -> BoxIterator {
+#[allow(dead_code)]
 
-//     BoxIterator::new(location)
-// }
+pub fn iter_column(location: Location) -> ColumnIterator {
 
+    ColumnIterator::new(location)
+}
+
+
+#[allow(dead_code)]
+pub fn iter_box(location: Location) -> BoxIterator {
+
+    BoxIterator::new(location)
+}
+
+
+
+#[cfg(test)]
+mod tests {
+
+    use std::collections::HashSet;
+
+    use crate::grid_iter::{iter_box, iter_column, iter_row};
+    use crate::location::Location;
+    use crate::config::{CELLS_PER_BOX, CELLS_PER_COLUMN, CELLS_PER_ROW, CELLS_PER_SECTOR};
+
+    use super::iter_sector;
+
+
+    #[test]
+    fn check_sector_iterator() {
+
+        let mut visited: HashSet<Location> = HashSet::new();
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        for cell in iter_sector(start) {
+            println!("{cell}");
+            assert!(
+                visited.insert(cell)
+            );
+        }
+
+        assert_eq!(visited.len(), CELLS_PER_SECTOR);
+
+    }
+
+
+    #[test]
+    fn check_sector_iterator_order() {
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        let mut it = iter_sector(start);
+
+        assert_eq!(Some(Location { row: 0, column: 0 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 2 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 3 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 4 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 5 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 6 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 7 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 8 }), it.next());
+        assert_eq!(Some(Location { row: 1, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 2, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 3, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 4, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 5, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 6, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 7, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 8, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 1, column: 0 }), it.next());
+        assert_eq!(Some(Location { row: 1, column: 2 }), it.next());
+        assert_eq!(Some(Location { row: 2, column: 0 }), it.next());
+        assert_eq!(Some(Location { row: 2, column: 2 }), it.next());
+        assert!(it.next().is_none());
+
+    }
+
+
+    #[test]
+    fn check_row_iterator() {
+
+        let mut visited: HashSet<Location> = HashSet::new();
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        for cell in iter_row(start) {
+            println!("{cell}");
+            assert!(
+                visited.insert(cell)
+            );
+        }
+
+        assert_eq!(visited.len(), CELLS_PER_ROW);
+        
+    }
+
+
+    #[test]
+    fn check_row_iterator_order() {
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        let mut it = iter_row(start);
+
+        assert_eq!(Some(Location { row: 0, column: 0 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 2 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 3 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 4 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 5 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 6 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 7 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 8 }), it.next());
+        assert!(it.next().is_none());
+
+    }
+
+
+    #[test]
+    fn check_column_iterator() {
+
+        let mut visited: HashSet<Location> = HashSet::new();
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        for cell in iter_column(start) {
+            println!("{cell}");
+            assert!(
+                visited.insert(cell)
+            );
+        }
+
+        assert_eq!(visited.len(), CELLS_PER_COLUMN);
+        
+    }
+
+
+    #[test]
+    fn check_column_iterator_order() {
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        let mut it = iter_column(start);
+
+        assert_eq!(Some(Location { row: 0, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 1, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 2, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 3, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 4, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 5, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 6, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 7, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 8, column: 1 }), it.next());
+        assert!(it.next().is_none());
+
+    }
+
+
+    #[test]
+    fn check_box_iterator() {
+
+        let mut visited: HashSet<Location> = HashSet::new();
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        for cell in iter_box(start) {
+            println!("{cell}");
+            assert!(
+                visited.insert(cell)
+            );
+        }
+
+        assert_eq!(visited.len(), CELLS_PER_BOX);
+        
+    }
+
+
+    #[test]
+    fn check_box_iterator_order() {
+
+        let start = Location {
+            row: 0,
+            column: 1
+        };
+
+        let mut it = iter_box(start);
+
+        assert_eq!(Some(Location { row: 0, column: 0 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 0, column: 2 }), it.next());
+        assert_eq!(Some(Location { row: 1, column: 0 }), it.next());
+        assert_eq!(Some(Location { row: 1, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 1, column: 2 }), it.next());
+        assert_eq!(Some(Location { row: 2, column: 0 }), it.next());
+        assert_eq!(Some(Location { row: 2, column: 1 }), it.next());
+        assert_eq!(Some(Location { row: 2, column: 2 }), it.next());
+        assert!(it.next().is_none());
+
+    }
+
+}

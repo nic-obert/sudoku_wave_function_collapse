@@ -3,7 +3,7 @@ use core::fmt;
 use crate::config::{COLUMN_COUNT, DIGIT_BASE, ROW_COUNT};
 
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Location {
 
     pub row: u8,

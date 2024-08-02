@@ -28,8 +28,6 @@ pub fn solve(grid: &Grid) -> Grid {
 
 fn solve_bruteforce_internal(grid: Grid) -> Result<Grid, ()> {
 
-    // println!("{grid}");
-
     let mut visited: HashSet<Location> = HashSet::new();
 
     while visited.len() < CELL_COUNT {
@@ -61,8 +59,6 @@ fn solve_bruteforce_internal(grid: Grid) -> Result<Grid, ()> {
                 // Proceed the solving process by trying with the next possible state.
                 continue;
             }
-
-            // println!("Trying board:\n{branch}");
 
             // The update was successful, proceed the solving process
             if let Ok(solved_grid) = solve_bruteforce_internal(branch) {

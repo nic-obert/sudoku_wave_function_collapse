@@ -33,8 +33,6 @@ pub fn solve(base_grid: &Grid) -> Grid {
 
 fn solve_backtracking(mut grid: Grid) -> Result<Grid, ()> {
 
-    println!("{grid}");
-
     // Try to solve the board by analyzing the neighboring wave functions.
     while pass_wave_group(&mut grid, grid_iter::iter_rows())?
         || pass_wave_group(&mut grid, grid_iter::iter_columns())?
@@ -118,7 +116,6 @@ fn pass_wave_group(grid: &mut Grid, it: impl Iterator<Item = impl Iterator<Item 
             // If a state is unique within its row, column, or box, it's guaranteed to be the correct state
             if let State::Unique(location) = state {
                 grid.update_collapse(location, i as u8 + 1)?;
-                println!("{grid}");
                 collapsed_any = true;
             }
         }
@@ -156,6 +153,9 @@ mod tests {
         // save_board(&board, "test_boards/easy.json");
 
         solve(&board);
+
+        assert!(board.check_valid());
+
     }
 
 
@@ -177,6 +177,9 @@ mod tests {
         // save_board(&board, "test_boards/medium.json");
 
         solve(&board);
+
+        assert!(board.check_valid());
+
     }
 
     
@@ -195,15 +198,11 @@ mod tests {
             (),9,(),2,(),(),7,(),()
         ]);
 
-        /*
-            This board is solvable without backtracking 
-            and without neighboring wave function analysis.
-            The first pass that calculates the wave functions shoud be enough. (manually tested)
-        */
-
         // save_board(&board, "test_boards/hard.json");
 
         solve(&board);
+
+        assert!(board.check_valid());
     }
 
 }

@@ -108,14 +108,12 @@ impl Grid {
     #[inline]
     pub fn set_at(&mut self, location: Location, cell: Cell) {
         self.cells[location.into_index()] = cell;
-        println!("Updated: {location}\n{self}");
     }
 
 
     #[inline]
     pub fn set_index(&mut self, i: usize, cell: Cell) {
         self.cells[i] = cell;
-        println!("Updated: {}\n{self}", Location::from_index(i));
     }
 
 
@@ -150,7 +148,7 @@ impl Grid {
                 return false;
             }
         }
-        
+
         true
     }
 
@@ -168,20 +166,16 @@ impl Grid {
                 // Already updated by a previous iteration
                 continue;
             }
+            
             assert!(!matches!(self.get_at(location), Cell::Certain { .. }));
             self.set_at(location, Cell::Certain { digit: collapsed_digit });
-            // println!("{self}");
     
             for cell in grid_iter::iter_sector(location) {
     
-                // println!("{self}");
-                
                 match self.get_at(cell) {
                     
                     Cell::Certain { digit } => {
-                        assert!(!(cell == location && digit != collapsed_digit));
                         if cell != location && digit == collapsed_digit {
-                            println!("Unsolvable grid:\n{self}");
                             return Err(());
                         }
                     },
