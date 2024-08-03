@@ -92,7 +92,13 @@ This technique generates a valid pseudo-random Sudoku board with at least one po
 
 ![Maximum entropy board](assets/max_entropy_board.png)
 
-TO COMPLETE
+1. Iterate through every cell, randomly collapsing each wave function and updating the neighboring cells accordingly as shown in the following exmaple:
+
+![Random collapse generation](assets/random_collapse_generation1.png)
+![Random collapse generation](assets/random_collapse_generation2.png)
+![Random collapse generation](assets/random_collapse_generation3.png)
+
+If an invalid board configuration is reached, restart the generation process from step 1.
 
 ## Procedural wave function collapse with uniqueness checks
 
@@ -120,7 +126,6 @@ This is a more advanced algorithm that is guaranteed to find the correct board c
 1. The first step is the same as the brute-force technique. We calculate the wave function of every cell, collapsing eventual single-state waves.
 2. We then iterate through all the rows, columns, and 3x3 boxes. For every row, column, and 3x3 box, we search for a unique uncertain state. Because of Sudoku's rules, each row, column, and 3x3 box must contain every state exactly once. This means, for example, that, if a cell is the only one in its row that has the digit `9` as a possible state, then `9` is guaranteed to be the correct state of that cell because the row would otherwise have no `9` in it. If we find such a cell, we collapse the cell's wave function and propagate the changes to neighboring cells and continue solving.
 3. If in the previous step no cell was updated, it means that we cannot deterministically solve this board by analyzing the neighboing wave functions. At this point, we do a brute-force backtracking step. We choose the cell with the lowest entropy, duplicate the current board configuration, randomly collapse the lowest entropy cell in the branched board and continue solving from step 2. If the branch results unsolvable, try collapsing the aforementioned cell with the next possible state and repeat.
-
 
 # License
 
