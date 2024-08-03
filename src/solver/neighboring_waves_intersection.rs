@@ -4,7 +4,6 @@ use crate::config::DIGIT_BASE;
 use super::utils;
 
 
-#[allow(dead_code)]
 /**
     1. Calculate the wave function of all blank cells.
     2. Iterate through all rows, columns, and boxes:
@@ -24,6 +23,68 @@ pub fn solve(base_grid: &Grid) -> Grid {
         grid
     } else {
         solve_backtracking(grid).expect("Board should be solvable")
+    }
+}
+
+
+pub fn has_unique_solution(base_grid: &Grid) -> bool {
+
+    let mut grid = base_grid.clone();
+
+    utils::initialize_waves(&mut grid);
+
+    if grid.is_solved() {
+        true
+    } else {
+        has_unique_solution_backtracking(grid)
+    }
+}
+
+
+fn has_unique_solution_backtracking(mut grid: Grid) -> bool {
+    
+    fn pass(grid: &mut Grid) -> Result<bool,()> {
+        while pass_wave_group(grid, grid::iter_rows())?
+            || pass_wave_group(grid, grid::iter_columns())?
+            || pass_wave_group(grid, grid::iter_boxes())?
+        { }
+        Ok(false)
+    }
+
+    if pass(&mut grid).is_err() {
+        // This branch is unsolvable, return 0 solutions found in this configuration
+        return false;
+    }
+
+    if let Some((location, wave)) = grid.lowest_entropy() {
+
+        // Initialli set to false as in no solutions were found
+        let mut unique_solution = false;
+
+        // Try collapsing each state to see which produces a correct board
+        for state in wave.states() {
+
+            let mut branch = grid.clone();
+
+            // This configuration is not a solution
+            if branch.update_collapse(location, state).is_err() {
+                continue;
+            }
+            
+            if has_unique_solution_backtracking(branch) {
+                if unique_solution {
+                    // More than one solution found
+                    return false;
+                }
+                // This solution is unique, for now
+                unique_solution = true;
+            }
+        }
+        
+        unique_solution
+    } else {
+        // Grid is solved without backtracking
+        true
     }
 }
 

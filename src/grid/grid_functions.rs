@@ -1,8 +1,9 @@
 use std::collections::HashSet;
 
-use rand::Rng;
+use rand::seq::SliceRandom;
 
 use crate::config::CELL_COUNT;
+use crate::solver::neighboring_waves_intersection::has_unique_solution;
 
 use super::{Grid, Location, Cell, Digit, Entropy, WaveFunction};
 use super::grid_iter;
@@ -24,7 +25,10 @@ impl Grid {
                 continue;
             }
 
-            assert!(!matches!(self.get_at(location), Cell::Certain { .. }));
+            if matches!(self.get_at(location), Cell::Certain { .. }) {
+                return Err(());
+            }
+
             self.set_at(location, Cell::Certain { digit: collapsed_digit });
     
             for cell in grid_iter::iter_sector(location) {
@@ -165,24 +169,29 @@ impl Grid {
     }
 
 
-    pub fn with_random_blank_cells(&self, non_blank_cells: u8) -> Self {
+    pub fn with_random_blank_cells(&self, blank_cell_cap: u8) -> Self {
 
-        let mut to_clear = CELL_COUNT as u8 - non_blank_cells;
         let mut new_grid = self.clone();
 
         let mut rng = rand::thread_rng();
 
-        while to_clear != 0 {
+        let mut cells: Vec<usize> = (0..CELL_COUNT).collect();
+        cells.shuffle(&mut rng);
 
-            let i = rng.gen_range(0..CELL_COUNT);
-            
-            if matches!(new_grid.get_index(i), Cell::Blank) {
-                continue;
+        for (cells_cleared, &i) in cells.iter().enumerate() {
+
+            if blank_cell_cap == cells_cleared as u8 {
+                break;
             }
 
+            let old_cell_state = new_grid.get_index(i);
+            
             new_grid.set_index(i, Cell::Blank);
 
-            to_clear -= 1;
+            if !has_unique_solution(&new_grid) {
+                new_grid.set_index(i, old_cell_state);
+            }
+
         }
 
         new_grid
@@ -273,6 +282,29 @@ impl Grid {
         } else {
             Ok(lowest)
         }
+    }
+
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+
+    #[test]
+    fn check_blank_cells() {
+
+        let board = Grid::new_random();
+
+        let cap = 30;
+        
+        let with_blanks = board.with_random_blank_cells(cap);
+
+        let blanks = with_blanks.cells.iter().filter(|cell| matches!(cell, Cell::Blank)).count();
+
+        assert!(cap >= blanks as u8);
     }
 
 }

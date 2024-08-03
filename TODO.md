@@ -6,7 +6,6 @@ Project Description
 
 ### Todo
 
-- [ ] use the bruteforce backtracking algorithm to count the number of solutions to generate a board with a unique solution  
 - [ ] Eventually, implement a more efficient sudoku generation algorithm that doesn't involve brute-force generation.  
 
 ### In Progress
@@ -15,6 +14,7 @@ Project Description
 
 ### Done ✓
 
+- [x] use the backtracking algorithm to count the number of solutions to generate a board with a unique solution  
 - [x] debug the bruteforce backtracking algorithm to see why it sometimes gets stuck. Maybe it's just bad luck that the algorithm is getting everything wrong  
 - [x] rewrite the serde interface  
 - [x] Implement solver that analyzes wave functions and intersects them  
