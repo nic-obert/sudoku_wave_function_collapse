@@ -9,7 +9,7 @@ A Sudoku board solver and generator written in Rust.
     - [Wave function collapse](#wave-function-collapse)
     - [Wave functions in Sudoku](#wave-functions-in-sudoku)
 - [How to generate a Sudoku board](#how-to-generate-a-sudoku-board)
-  - [Procedural wave function collapse](#procedural-wave-function-collapse)
+  - [Procedural wave function collapse to generate a complete board](#procedural-wave-function-collapse-to-generate-a-complete-board)
   - [Procedural wave function collapse with uniqueness checks](#procedural-wave-function-collapse-with-uniqueness-checks)
 - [How to solve a Sudoku board](#how-to-solve-a-sudoku-board)
   - [Wave function collapse with brute-force backtracking](#wave-function-collapse-with-brute-force-backtracking)
@@ -82,31 +82,40 @@ At this point, the third cell of the first row must collapse to a value of `1`:
 
 # How to generate a Sudoku board
 
-There are many techniques to generate a Sudoku board. This respository implements some basic techniques to generate a random valid board.
+Generating a valid Sudoku board with a unique solution is a two-phase process.
 
-## Procedural wave function collapse
+1. First, you generate a valid, completely filled board.
+2. Then, you randomly clear a number of cells while still maintaining the uniqueness of the solution.
 
-This technique generates a valid pseudo-random Sudoku board with at least one possible solution. The solution is not guaranteed to be unique, though. To generate boards with unique solutions, check out the next chapter.
+These two phases are described in detail below.
+
+## Procedural wave function collapse to generate a complete board
+
+This phase consists in generating a pseudo-random complete valid board.
 
 1. First, a new board is generated with maximum entropy, meaning all cells can assume every possible state. 
 
 ![Maximum entropy board](assets/max_entropy_board.png)
 
-1. Iterate through every cell, randomly collapsing each wave function and updating the neighboring cells accordingly as shown in the following exmaple:
+2. Iterate through every cell, randomly collapsing each wave function and updating the neighboring cells accordingly as shown in the following exmaple:
 
 ![Random collapse generation](assets/random_collapse_generation1.png)
 ![Random collapse generation](assets/random_collapse_generation2.png)
 ![Random collapse generation](assets/random_collapse_generation3.png)
 
-If an invalid board configuration is reached, restart the generation process from step 1.
+If an invalid board configuration is reached, restart the generation process from step 1. Stop the process when a complete valid board is reached and go to the next phase.
 
 ## Procedural wave function collapse with uniqueness checks
 
-TO COMPLETE
+After a complete board is generated in the previous phase, it's time to clear random cells to make the board playable. After all, a completely filled board is boring to play with.
+
+1. Iterate over the board cells in random order. The random order is necessary to prevent iteration order artifacts from being observable in the resulting board.
+2. For every cell, make it blank and try to see if the resulting board has a unique solution. If the solution is unique, just continue the iteration. If the solution is not unique, restore the cell's old state and continue the iteration.
+3. If the number of cleared cells reaches the specified blank cell cap, which is the maximum number of blank cells you want your generated board to have, stop the iteration.
 
 # How to solve a Sudoku board
 
-Solving a Sudoku board can be a complicated task, especially if the given hints are few. This repository implements some techniques to solve valid Sudoku boards using algorithms based on wave function collapse.
+Solving a Sudoku board can be a complicated task, especially if the given hints are few. This repository implements two techniques to solve valid Sudoku boards using algorithms based on wave function collapse.
 
 ## Wave function collapse with brute-force backtracking
 

@@ -10,10 +10,10 @@ Project Description
 
 ### In Progress
 
-- [ ] write a good readme  
 
 ### Done ✓
 
+- [x] write a good readme  
 - [x] use the backtracking algorithm to count the number of solutions to generate a board with a unique solution  
 - [x] debug the bruteforce backtracking algorithm to see why it sometimes gets stuck. Maybe it's just bad luck that the algorithm is getting everything wrong  
 - [x] rewrite the serde interface  
