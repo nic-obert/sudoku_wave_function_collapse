@@ -65,6 +65,7 @@ impl Grid {
     }
 
 
+    /// Calculate the wave function of a specific cell.
     pub fn wave_at(&self, location: Location) -> WaveFunction {
 
         let mut wave = WaveFunction::new_max_entropy();
@@ -83,18 +84,15 @@ impl Grid {
     }
 
 
+    /// Whether the board is solved, meaning all cells have a certain value.
     pub fn is_solved(&self) -> bool {
 
-        for cell in self.cells.iter() {
-            if !matches!(cell, Cell::Certain { .. }) {
-                return false;
-            }
-        }
-
-        true
+        self.cells.iter()
+            .all(|cell| matches!(cell, Cell::Certain { .. }))
     }
 
 
+    /// Generate a new random, completely filled valid board
     pub fn new_random() -> Self {
 
         let rng = rand::thread_rng();
@@ -108,7 +106,7 @@ impl Grid {
                 match grid.get_index(i) {
 
                     Cell::Uncertain { wave } => {
-
+                        
                         let collapsed = wave.collapse_random(rng.clone()).expect("Should be valid because of the wave function");
                         
                         if grid.update_collapse(Location::from_index(i), collapsed).is_err() {
@@ -131,7 +129,8 @@ impl Grid {
     }
 
 
-    #[allow(dead_code)]
+    /// Check if the board is valid.
+    /// Note that this function only checks cells with a certain value.
     pub fn check_valid(&self) -> bool {
 
         for i in 0..CELL_COUNT {
@@ -169,6 +168,9 @@ impl Grid {
     }
 
 
+    /// Return a new board with a maximum of `blank_cell_cap` blank cells.
+    /// Note that this function may return a board with fewer blank cells than `blank_cell_cap`.
+    /// The cells are cleared randomly.
     pub fn with_random_blank_cells(&self, blank_cell_cap: u8) -> Self {
 
         let mut new_grid = self.clone();
@@ -178,9 +180,12 @@ impl Grid {
         let mut cells: Vec<usize> = (0..CELL_COUNT).collect();
         cells.shuffle(&mut rng);
 
-        for (cells_cleared, &i) in cells.iter().enumerate() {
+        let mut cells_cleared: u8 = 0;
 
-            if blank_cell_cap == cells_cleared as u8 {
+        for i in cells {
+
+            // Don't clear more cells than requested
+            if blank_cell_cap == cells_cleared {
                 break;
             }
 
@@ -188,7 +193,11 @@ impl Grid {
             
             new_grid.set_index(i, Cell::Blank);
 
-            if !has_unique_solution(&new_grid) {
+            if has_unique_solution(&new_grid) {
+                // This configuration is valid, so keep the changes.
+                cells_cleared += 1;
+            } else {
+                // This configuration is invalid because doesn't have a unique solution. Revert back the changes.
                 new_grid.set_index(i, old_cell_state);
             }
 
