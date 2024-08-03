@@ -26,10 +26,10 @@ fn main() {
 
         },
 
-        Commands::Gen { output_file, solve, save_solution, solving_algorithm, blank_cell_cap } => {
+        Commands::Gen { output_file, solve, save_solution, solving_algorithm, blank_cell_cap, generation_progress } => {
             
             let board = Grid::new_random()
-                .with_random_blank_cells(blank_cell_cap.unwrap_or(DEFAULT_BLANK_CELL_CAP));
+                .with_random_blank_cells(blank_cell_cap.unwrap_or(DEFAULT_BLANK_CELL_CAP), generation_progress);
 
             if let Some(output_file) = output_file {
                 save_board(&board, &output_file);

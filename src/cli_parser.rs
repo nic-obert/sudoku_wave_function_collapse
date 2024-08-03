@@ -63,7 +63,11 @@ pub enum Commands {
 
         /// Select the algorithm to solve the Sudoku
         #[arg(short = 'a', long, requires("solve"), value_enum, default_value_t)]
-        solving_algorithm: SolvingAlgorithms
+        solving_algorithm: SolvingAlgorithms,
+
+        /// Show generation progress
+        #[arg(short = 'p', long)]
+        generation_progress: bool
 
     }
 

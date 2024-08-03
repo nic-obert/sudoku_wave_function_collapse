@@ -171,7 +171,7 @@ impl Grid {
     /// Return a new board with a maximum of `blank_cell_cap` blank cells.
     /// Note that this function may return a board with fewer blank cells than `blank_cell_cap`.
     /// The cells are cleared randomly.
-    pub fn with_random_blank_cells(&self, blank_cell_cap: u8) -> Self {
+    pub fn with_random_blank_cells(&self, blank_cell_cap: u8, show_generation_progress: bool) -> Self {
 
         let mut new_grid = self.clone();
 
@@ -183,6 +183,10 @@ impl Grid {
         let mut cells_cleared: u8 = 0;
 
         for i in cells {
+
+            if show_generation_progress {
+                println!("Blank cells: {cells_cleared}/{blank_cell_cap}");
+            }
 
             // Don't clear more cells than requested
             if blank_cell_cap == cells_cleared {
@@ -309,7 +313,7 @@ mod tests {
 
         let cap = 30;
         
-        let with_blanks = board.with_random_blank_cells(cap);
+        let with_blanks = board.with_random_blank_cells(cap, false);
 
         let blanks = with_blanks.cells.iter().filter(|cell| matches!(cell, Cell::Blank)).count();
 
