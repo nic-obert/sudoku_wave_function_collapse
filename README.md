@@ -24,6 +24,11 @@ Generate a Sudoku board:
 ./run.sh gen
 ```
 
+Generate a Sudoku board and solve it in-place:
+```bash
+./run.sh gen -s
+```
+
 Generate and save a Sudoku board to a file:
 ```bash
 ./run.sh gen -o <my_board>
@@ -51,7 +56,12 @@ Before we get to the algorithms, let's get familiar with the related concepts an
 ### Wave function collapse
 
 The wave function collapse algorithm is a technique inspired by quantum mechanics. In simple words, very small particles normally behave like probability waves. However, when the probability wave is observed, it collapses into a determinate particle.  
+
+![Wave function collapse](assets/wave_function_collapse.png)
+
 Furthermore, consider a pair of entangled particles. If the spin of one of them is measured, the spin of the other particle is automatically determined to be the opposite of its twin's. This means that the state of one particle is constrained by the state of the other.
+
+![Entangled particles collapse](assets/entangled_particles.png)
 
 Wave function collapse algorithms borrow from the concepts of quantum constraints and probability wave collapse by assigning a wave function to certain items. These wave functions are then procedurally collapsed into determinate states.  
 Whenever an item's wave function collapses, the wave functions of entangled items are affected based on the constraints placed by the newly collapsed state. If, as a result of the previous collapse, an entangled wave function happens to have only one possible state, it collapses in turn, affecting other entangled wave functions in a chain reaction.
@@ -60,6 +70,15 @@ Whenever an item's wave function collapses, the wave functions of entangled item
 
 In the case of Sudoku, the range of possible states a certain cell can assume is represented by a wave function. Such a wave function is dependent on the constraints put in place by the neighboring cells according to the rules of Sudoku.
 
+![Wave function on cells](assets/wave_function_on_cells.png)
+
+In the example above, the second and third cells of the first row are entangled, meaning that either one collapsing results in the other automatically assuming the other value. Let's now say that the second cell collapses to a value of `2`:
+
+![Collapsed cell wave](assets/collapsed_cell_wave.png)
+
+At this point, the third cell of the first row must collapse to a value of `1`:
+
+![Collapsed entangled wave](assets/collapsed_entangled_wave.png)
 
 # How to generate a Sudoku board
 
@@ -69,8 +88,9 @@ There are many techniques to generate a Sudoku board. This respository implement
 
 This technique generates a valid pseudo-random Sudoku board with at least one possible solution. The solution is not guaranteed to be unique, though. To generate boards with unique solutions, check out the next chapter.
 
-First, a new board is generated with maximum entropy, meaning all cells can assume every possible state. 
-We can then iterate through every cell of the board 
+1. First, a new board is generated with maximum entropy, meaning all cells can assume every possible state. 
+
+![Maximum entropy board](assets/max_entropy_board.png)
 
 TO COMPLETE
 

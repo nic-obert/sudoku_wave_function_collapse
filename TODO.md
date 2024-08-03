@@ -7,7 +7,7 @@ Project Description
 ### Todo
 
 - [ ] use the bruteforce backtracking algorithm to count the number of solutions to generate a board with a unique solution  
-- [ ] Eventually, implement a more efficient sudoku generation algorithm that doesn't involve brute-force generation. Now the average successful generation rate is around 26%  
+- [ ] Eventually, implement a more efficient sudoku generation algorithm that doesn't involve brute-force generation.  
 
 ### In Progress
 
